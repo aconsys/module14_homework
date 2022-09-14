@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+  <style>
+    .main {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding-top: 70px;
+    }
+
+    label, .input, .btn {
+      display: block;
+      margin: 0 auto;
+    }
+
+    label {
+      margin-top: 20px;
+      font-size: 12px;
+    }
+
+    .input {
+      height: 20px;
+      padding-left: 10px;
+    }
+
+    .btn {
+      margin-top: 20px;
+      width: 120px;
+      height: 30px;
+      background-color: rgba(0, 0, 255, 0.7);
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+    }
+
+    .result {
+      margin-top: 50px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .result img {
+      width: 320px;
+      margin: 5px 5px;
+    }
+  </style>
+
+</head>
+<body>
+  <main class="main">
+    <div class="wrap">
+      <label for="pageNum">Номер страницы</label>
+      <input class="input" type="text" id ="pageNum">
+      <label for="limit">Лимит</label>
+      <input class="input" type="text" id="limit">
+      <button class="btn" id="requestBtn">Запрос</button>
+    </div>
+    <div class="result"></div>
+  </main>
+
+  <script>
+    'use strict';
+
+    const url = 'https://picsum.photos/v2/list';//Ресурс доступен только через VPN
+    const proxy = 'https://cors-anywhere.herokuapp.com/';//Proxy для обхода ошибки No'Access-Control-Allow-Origin' header is present on the requested resource
+    const pageNumInput = document.getElementById('pageNum');
+    const limitInput = document.getElementById('limit');
+    const requestBtn =document.getElementById('requestBtn');
+    const resultNode = document.querySelector('.result');
+
+    const getInputs = () => {//Функция получает значения инпутов
+      let pageNum = +pageNumInput.value;
+      let limit = +limitInput.value;
+      let result;
+
+      if ((pageNum < 1 || pageNum > 10) || (limit < 1 || limit > 10) || isNaN(pageNum) || isNaN(limit)) {//выводим предупреждения если значения вне диапазона
+        if (((pageNum < 1 || pageNum > 10) || isNaN(pageNum)) && ((limit < 1 || limit > 10) || isNaN(limit))) {
+          result = 'Номер страницы и лимит вне диапазона от 1 до 10';
+        } else if (pageNum < 1 || pageNum > 10 || isNaN(pageNum)) {
+          result = 'Номер страницы вне диапазона от 1 до 10';
+        } else if (limit < 1 || limit > 10 || isNaN(limit)) {
+          result = 'Лимит вне диапазона от 1 до 10';
+        }
+      } else {//или записываем зачения инпутов в объект, если введены числа от 1 до 10
+        result = {
+          page: pageNum,
+          limit: limit,
+        };
+      }
+
+      return result;
+    };
+
+    const displayWarn = (string) => {//Функция Выводит предупреждения на страницу
+      let html = string;
+
+      resultNode.innerHTML = html;
+    };
+
+    const displayImages = (data) => {//Функция вывода изображени Из масива обектов полученных при запросе достаём ссылку на каждое изображение и Выводим изображения на страницу
+      let html = '';
+
+      data.forEach(item => {
+        html += `<img src="${item.download_url}">`;
+      });
+      resultNode.innerHTML = html;
+    };
+
+    const useRequest = (url, getParam, callback) => {//Функция запроса
+      let link = `${proxy}${url}?page=${getParam.page}&limit=${getParam.limit}`;//GET параметры запроса - полученные значения инпутов
+
+      fetch(link).then((response) => {
+        return response.json() ;
+      }).then((data) => {
+        console.log(data);
+        callback(data);//Коллбэк функция - displayImages()
+        localStorage.setItem('lastJSON', JSON.stringify(data));//Записываем данные полученные при запросе в LocalStorage
+      }).catch(() => console.log('error'));
+    };
+
+    requestBtn.addEventListener('click', () => {//Обработчик клика по кнопке "Запрос"
+      let inputResult = getInputs();//Получаем значения инпутов
+
+      if (typeof inputResult === 'string') {//Выводим предупреждения если значения вне диапазона
+        displayWarn(inputResult);
+      } else {//Если значения инпутов верны делаем запрос и выводим изображения через коллбэк
+        useRequest(url, inputResult, displayImages);
+      }
+    });
+
+    const setLocalStorage = (data) => {
+      localStorage.setItem('lastJSON', JSON.stringify(data));
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('Reloaded');
+      const lastJSON = localStorage.getItem('lastJSON');
+
+      if (lastJSON) {//При перезагрузке страницы проверяем есть ли данные в LocalStorage
+        const data = JSON.parse(lastJSON);
+        displayImages(data);//Если данные в LocalStorage, выводим последные загруженные изображения
+      }
+    });
+  </script>
+</body>
+</html>

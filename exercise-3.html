@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+  <style>
+    body {
+      background-color: rgba(0, 0, 255, 0.3);
+    }
+
+    .form, .form-wrap, .result-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    .form {
+      width: 30vw;
+      padding-top: 50px;
+      flex-wrap: wrap;
+    }
+
+    .input {
+      width: 100%;
+      height: 30px;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      width: 100%;
+      height: 30px;
+      background-color: blue;
+      color: #fff;
+      border: none;
+    }
+
+    .btn:hover {
+      background-color:rgba(0, 0, 255, 0.5);
+    }
+
+    .result {
+      margin-top: 50px;
+      padding: 20px 20px;
+      background-color: #ccc;
+      display: none;
+    }
+
+    .result__active {
+      display: block;
+    }
+  </style>
+  
+</head>
+<body>
+  <div class="form-wrap">
+    <div class="form">
+        <input id="input" class="input" type="text">
+        <button id="btn" class="btn">Click me!</button>
+    </div>
+  </div>
+  <div class="result-wrap">
+    <div class="result"></div>
+  </div>
+
+  <script>
+    'use strict';
+
+    const reqUrl = 'https://loremflickr.com/json/g/320/240/all';
+    const proxy = 'https://cors-anywhere.herokuapp.com/';
+    const resultNode = document.querySelector('.result');
+
+    const useRequest = (url, callback, limit) => {//Функция выполняющая запрос
+      const xhr = new XMLHttpRequest();//Создаём экземпляр класса XMLHttpRequest
+
+      url = `${proxy}${url}?limit=${limit}`;/*Добавляем значение limit в запрос (запрос выполняем через прокси для исключения ошибки
+                                              No'Access-Control-Allow-Origin' header is present on the requested resource)*/
+      xhr.open('GET', url);//Инициализация запроса
+
+      xhr.onload = () => {//Обработчик ответа сервера
+        if (xhr.status != 200) {//Если запрос завершился ошибкой:
+          console.log('Статус ответа: ', xhr.status);
+        } else {//Если запрос выполнен успешно:
+          const result = JSON.parse(xhr.response);//- парсим ответ сервера,
+          if (callback) {//-вызываем колбэк
+            callback(result);
+          }
+        }
+      };
+
+      xhr.onerror = () => {//Обработчик ошибки
+        console.log('Ошибка! Статус ответа: ', xhr.status);
+      };
+
+      xhr.send();//Отправка запроса
+    };
+
+    const displayResult = (data) => {//Функция обработчик результата запроса
+      let content;
+      if (!data) {//
+        content = `<span>Число вне диапазона от 1 до 10</span>`;
+
+        resultNode.innerHTML = content;
+        resultNode.classList.add('result__active');
+      } else {
+        content = `<img src="${data.file}">`;
+
+        resultNode.innerHTML = content;
+        resultNode.classList.add('result__active');
+      }
+    };
+
+    const checkInputValue = () => {
+    	let inputValue = document.getElementById('input').value;//Получаем значение input
+
+    	document.getElementById('input').value = '';//Очищаем поле ввода
+    	if (inputValue < 1 || inputValue > 10) {//Если введено 1 > значение > 10, выводим сообщение
+      		displayResult();
+    	} else {//Если значение в диапазоне 1..10, выполняем запрос со значением limit = введённому значению
+     		 useRequest(reqUrl, displayResult, inputValue);
+    	}
+    };
+
+    document.getElementById('btn').addEventListener('click', () => {
+      checkInputValue();
+    });
+
+  </script>
+</body>
+</html>
